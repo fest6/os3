@@ -483,12 +483,18 @@ int mm_copy(struct mm *old, struct mm *new) {
         new_vma->vm_start   = vma->vm_start;
         new_vma->vm_end     = vma->vm_end;
         new_vma->pte_flags  = vma->pte_flags;
-        if (mm_mappages(new_vma)) {
-            warnf("mm_mappages failed");
-            // when failed, new_vma is not inserted into mm->vma list.
-            // , and it is freed by mm_mappages.
+        // checkpoint 1 start
+        if (mm_mappages_cow(vma, new_vma)) {
+            errorf("[C1] mm_mappages_cow failed");
             goto err;
         }
+        // checkpoint 1 end
+        // if (mm_mappages(new_vma)) {
+        //     warnf("mm_mappages failed");
+        //     // when failed, new_vma is not inserted into mm->vma list.
+        //     // , and it is freed by mm_mappages.
+        //     goto err;
+        // }
         for (uint64 va = vma->vm_start; va < vma->vm_end; va += PGSIZE) {
             void *__kva pa_old = (void *)PA_TO_KVA(walkaddr(old, va));
             void *__kva pa_new = (void *)PA_TO_KVA(walkaddr(new, va));
