@@ -515,7 +515,7 @@ int mm_copy(struct mm *old, struct mm *new) {
         new_vma->vm_end     = vma->vm_end;
         new_vma->pte_flags  = vma->pte_flags;
         // checkpoint 1 start
-        if (mm_mappages_cow(vma, new_vma)) {
+        if (mm_mappages_cow(new_vma, vma)) {
             errorf("[C1] mm_mappages_cow failed");
             goto err;
         }
