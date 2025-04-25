@@ -354,8 +354,39 @@ int mm_mappages_cow(struct vma *vma, struct vma* oldvma) {
 
     for (va = vma->vm_start; va < vma->vm_end; va += PGSIZE) {
         // Assignment 3: CoW: TODO:
-        ret = -EINVAL;
-        goto bad;
+        // checkpoint 1 start
+        if ((pte = walk(mm, va, 1)) == 0) {
+            errorf("[C1] pte invalid, va = %p", va);
+            ret = -ENOMEM;
+            goto bad;
+        }
+        if (*pte & PTE_V) {
+            errorf("[C1] remap %p", va);
+            ret = -EINVAL;
+            goto bad;
+        }
+        pte_t *oldpte;
+        if ((oldpte = walk(oldmm, va, 0)) == 0) {
+            errorf("[C1] walk old pte failed, va = %p", va);
+            ret = -ENOMEM;
+            goto bad;
+        }
+        if (!(*oldpte & PTE_V)) {
+            errorf("[C1] old pte invalid, va = %p", va);
+            ret = -EINVAL;
+            goto bad;
+        }
+        uint64 pa = PTE2PA(*oldpte);
+        if (!pa) {
+            errorf("[C1] oldpte to pa failed, oldpte = %p", *oldpte);
+            ret = -ENOMEM;
+            goto bad;
+        }
+        // memset((void *)PA_TO_KVA(pa), 0, PGSIZE);
+        *pte = PA2PTE(pa) | vma->pte_flags | PTE_V;
+        // checkpoint 1 end
+        // ret = -EINVAL;
+        // goto bad;
     }
     sfence_vma();
 
