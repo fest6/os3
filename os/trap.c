@@ -145,7 +145,22 @@ static void handle_pgfault(void) {
         }
     }
     // Assignment 3 CoW: do copy here.
-
+    // checkpoint 1 start
+    uint64 pa_old = PTE2PA(*pte);
+    if (!pa_old) {
+        errorf("[C1] oldpte to pa failed, oldpte = %p", *pte);
+        setkilled(p, -2);
+    }
+    void *pa_new = kallocpage();
+    if (!pa_new) {
+        errorf("[C1] kallocpage failed");
+        setkilled(p, -2);
+    }
+    void *__kva kva_old = (void *)PA_TO_KVA(pa_old);
+    void *__kva kva_new = (void *)PA_TO_KVA(pa_new);
+    memmove(kva_new, kva_old, PGSIZE);
+    *pte = PA2PTE(pa_new) | mm->vma->pte_flags | PTE_W | PTE_V;
+    // checkpoint 1 end
 
     // otherwise, it is a page fault due to invalid address
     infof("page fault in application, bad addr = %p, bad instruction = %p, core dumped.", r_stval(), p->trapframe->epc);
